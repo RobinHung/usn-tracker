@@ -3,7 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"os"
+	"io/ioutil"
+	"log"
 	"strings"
 
 	"github.com/gocolly/colly"
@@ -78,6 +79,16 @@ func main() {
 		patches = append(patches, patch)
 	}
 
-	enc := json.NewEncoder(os.Stdout)
-	enc.Encode(patches)
+	// Print out json data
+	// enc := json.NewEncoder(os.Stdout)
+	// enc.Encode(patches)
+
+	jsonData, err := json.Marshal(patches)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = ioutil.WriteFile("trusty-esm-patches.json", jsonData, 0777)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
