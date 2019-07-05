@@ -33,6 +33,7 @@ func main() {
 
 	c2 := colly.NewCollector(
 		colly.AllowedDomains("nvd.nist.gov"),
+		colly.AllowURLRevisit(),
 	)
 
 	var cves [][]string
@@ -60,18 +61,25 @@ func main() {
 				if !strings.HasPrefix(link, "https://usn.ubuntu.com/") {
 					return
 				}
-				c.Visit(elem.Request.AbsoluteURL(link))
+				err := c.Visit(elem.Request.AbsoluteURL(link))
+				if err != nil {
+					log.Fatal(err)
+				}
 			})
 		})
 
 		e.ForEach("li", func(_ int, el *colly.HTMLElement) {
 			el.ForEach("a[href]", func(_ int, elem *colly.HTMLElement) {
 				link := elem.Attr("href")
-				if strings.HasPrefix(link, "https://people.canonical.com/~ubuntu-security/cve/") && strings.HasPrefix(elem.Text, "CVE-") {
+
+				if strings.HasPrefix(link, "https://people.canonical.com/~ubuntu-security/cve/") || strings.HasPrefix(elem.Text, "CVE-") {
 					sub = append(sub, elem.Text)
 
 					cveScoringLink := "https://nvd.nist.gov/vuln/detail/" + elem.Text
-					c2.Visit(cveScoringLink)
+					err := c2.Visit(cveScoringLink)
+					if err != nil {
+						log.Fatal(err)
+					}
 				}
 			})
 		})
@@ -85,13 +93,13 @@ func main() {
 		e.ForEach("span", func(_ int, el *colly.HTMLElement) {
 			attr := el.Attr("data-testid")
 			if attr == "page-header-vuln-id" {
-				vuln.ID = el.Text
+				vuln.ID = strings.TrimSpace(el.Text)
 			}
 			if attr == "vuln-cvssv3-base-score" {
-				vuln.BaseScore = el.Text
+				vuln.BaseScore = strings.TrimSpace(el.Text)
 			}
 			if attr == "vuln-cvssv3-base-score-severity" {
-				vuln.Severity = el.Text
+				vuln.Severity = strings.TrimSpace(el.Text)
 			}
 			if attr == "vuln-cvssv3-impact-score" {
 				vuln.ImpactScore = strings.TrimSpace(el.Text)
@@ -118,7 +126,6 @@ func main() {
 		patch.Title = t
 		patch.Date = dates[i]
 		patch.CVEs = cves[i]
-		// patch.CVEs = vv[i]
 		patch.CVEScores = vv[i]
 		patches = append(patches, patch)
 	}
