@@ -11,9 +11,10 @@ import (
 )
 
 type ubuntuEsmPatches struct {
-	Title string
-	Date  string
-	CVEs  []string
+	Title     string
+	Date      string
+	CVEs      []string
+	CVEScores []cve
 }
 
 type cve struct {
@@ -38,15 +39,18 @@ func main() {
 	patches := []ubuntuEsmPatches{}
 	var dates []string
 	var titles []string
+	pageCount := 0
 
 	vulns := []cve{}
+	vv := [][]cve{}
 
 	c.OnHTML("em", func(e *colly.HTMLElement) {
 		dates = append(dates, e.Text)
 	})
 
 	c.OnHTML("body.home", func(e *colly.HTMLElement) {
-		var subString []string
+		var sub []string
+		vv = append(vv, vulns)
 
 		e.ForEach(".p-heading--four", func(_ int, el *colly.HTMLElement) {
 			titles = append(titles, el.Text)
@@ -64,7 +68,7 @@ func main() {
 			el.ForEach("a[href]", func(_ int, elem *colly.HTMLElement) {
 				link := elem.Attr("href")
 				if strings.HasPrefix(link, "https://people.canonical.com/~ubuntu-security/cve/") && strings.HasPrefix(elem.Text, "CVE-") {
-					subString = append(subString, elem.Text)
+					sub = append(sub, elem.Text)
 
 					cveScoringLink := "https://nvd.nist.gov/vuln/detail/" + elem.Text
 					c2.Visit(cveScoringLink)
@@ -72,7 +76,8 @@ func main() {
 			})
 		})
 
-		cves = append(cves, subString)
+		cves = append(cves, sub)
+		pageCount++
 	})
 
 	c2.OnHTML("div#p_lt_WebPartZone1_zoneCenter_pageplaceholder_p_lt_WebPartZone1_zoneCenter_VulnerabilityDetail_VulnDetailFormPanel", func(e *colly.HTMLElement) {
@@ -80,11 +85,9 @@ func main() {
 		e.ForEach("span", func(_ int, el *colly.HTMLElement) {
 			attr := el.Attr("data-testid")
 			if attr == "page-header-vuln-id" {
-				// fmt.Println(el.Text)
 				vuln.ID = el.Text
 			}
 			if attr == "vuln-cvssv3-base-score" {
-				// fmt.Println(el.Text)
 				vuln.BaseScore = el.Text
 			}
 			if attr == "vuln-cvssv3-base-score-severity" {
@@ -98,7 +101,7 @@ func main() {
 			}
 		})
 
-		vulns = append(vulns, vuln)
+		vv[pageCount] = append(vv[pageCount], vuln)
 	})
 
 	c.OnRequest(func(r *colly.Request) {
@@ -115,10 +118,10 @@ func main() {
 		patch.Title = t
 		patch.Date = dates[i]
 		patch.CVEs = cves[i]
+		// patch.CVEs = vv[i]
+		patch.CVEScores = vv[i]
 		patches = append(patches, patch)
 	}
-
-	fmt.Println(vulns, len(vulns))
 
 	// Print out json data
 	// enc := json.NewEncoder(os.Stdout)
