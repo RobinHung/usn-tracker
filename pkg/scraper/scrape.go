@@ -134,12 +134,47 @@ func Scrape(target string, outputFileName string, displayOption bool) {
 		patches = append(patches, patch)
 	}
 
-	jsonData, err := json.Marshal(patches)
+	// jsonData, err := json.Marshal(patches)
+	jsonData, err := json.MarshalIndent(patches, "", "\t")
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = ioutil.WriteFile("trusty-esm-patches.json", jsonData, 0777)
-	if err != nil {
-		log.Fatal(err)
+
+	s := strings.Split(outputFileName, ".")
+	if s[len(s)-1] == "json" {
+		err := outputJSON(jsonData, outputFileName)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
+	// FIXME: output CSV file issue
+	// if s[len(s)-1] == "csv" {
+	// 	err := outputCSV(patches, outputFileName)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// }
 }
+
+func outputJSON(jsonData []byte, outputFileName string) error {
+	err := ioutil.WriteFile(outputFileName, jsonData, 0777)
+	return err
+}
+
+// func outputCSV(data []usnPatches, outputFileName string) error {
+// 	// writer := csv.NewWriter()
+// 	file, err := os.Create(outputFileName)
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	defer file.Close()
+
+// 	// writer := csv.NewWriter(file)
+// 	// defer writer.Flush()
+
+// 	// writer.WriteStruct()
+
+// 	w := csv.NewWriter(file)
+// 	err = w.WriteStructAll(data)
+// 	return err
+// }
