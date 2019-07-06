@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/gocolly/colly"
+	"github.com/mohae/struct2csv"
 )
 
 type usnPatches struct {
@@ -134,8 +136,8 @@ func Scrape(target string, outputFileName string, displayOption bool) {
 		patches = append(patches, patch)
 	}
 
-	// jsonData, err := json.Marshal(patches)
-	jsonData, err := json.MarshalIndent(patches, "", "\t")
+	jsonData, err := json.Marshal(patches)
+	// jsonData, err := json.MarshalIndent(patches, "", "\t")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -147,13 +149,12 @@ func Scrape(target string, outputFileName string, displayOption bool) {
 			log.Fatal(err)
 		}
 	}
-	// FIXME: output CSV file issue
-	// if s[len(s)-1] == "csv" {
-	// 	err := outputCSV(patches, outputFileName)
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// }
+	if s[len(s)-1] == "csv" {
+		err := outputCSV(patches, outputFileName)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 }
 
 func outputJSON(jsonData []byte, outputFileName string) error {
@@ -161,20 +162,14 @@ func outputJSON(jsonData []byte, outputFileName string) error {
 	return err
 }
 
-// func outputCSV(data []usnPatches, outputFileName string) error {
-// 	// writer := csv.NewWriter()
-// 	file, err := os.Create(outputFileName)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	defer file.Close()
+func outputCSV(data []usnPatches, outputFileName string) error {
+	file, err := os.Create(outputFileName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
 
-// 	// writer := csv.NewWriter(file)
-// 	// defer writer.Flush()
-
-// 	// writer.WriteStruct()
-
-// 	w := csv.NewWriter(file)
-// 	err = w.WriteStructAll(data)
-// 	return err
-// }
+	writer := struct2csv.NewWriter(file)
+	err = writer.WriteStructs(data)
+	return err
+}
