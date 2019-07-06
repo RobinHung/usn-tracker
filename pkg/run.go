@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/RobinHung/usn-tracker/pkg/scraper"
 	"github.com/urfave/cli"
 )
 
@@ -24,10 +25,15 @@ func Run(c *cli.Context) error {
 		noOutput = false
 	}
 
+	displayOption := c.Bool("display")
+	fmt.Println(displayOption)
+
 	if noTarget || noOutput {
 		log.Println("USNTracker requires both the `target` and `output` flag.")
 		cli.ShowAppHelpAndExit(c, 1)
 	}
+
+	scraper.Scrape(target, outputFileName, displayOption)
 
 	return nil
 }

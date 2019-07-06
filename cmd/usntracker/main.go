@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/RobinHung/ubuntu-esm-scraper/pkg"
+	"github.com/RobinHung/usn-tracker/pkg"
 	"github.com/urfave/cli"
 )
 
